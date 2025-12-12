@@ -21,105 +21,230 @@
 
         <script src="https://unpkg.com/three@0.155.0/build/three.min.js"></script>
         <script>
+            // Container element for the WebGL canvas
             const container = document.getElementById('container');
 
+            // Create the Three.js scene: this holds objects, lights, and cameras
             const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
-            camera.position.set(0,1.2,3);
 
-            const renderer = new THREE.WebGLRenderer({antialias:true});
+            // Create a perspective camera: fov 45°, aspect ratio matching window, near/far clipping
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+            // Move the camera back and slightly up so the object is visible and centered for young viewers
+            camera.position.set(0, 1.2, 3);
+
+            // Renderer: draws the scene into a canvas using WebGL
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio || 1);
+            // Append renderer canvas into the document
             container.appendChild(renderer.domElement);
 
-            // Lights
+            // --- Lighting ---
+            // Ambient light provides soft global illumination so textures are visible even in shadowed areas
             const ambient = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambient);
+
+            // Directional light acts like a sun to give soft shading and slight specular highlights
             const dir = new THREE.DirectionalLight(0xffffff, 0.8);
-            dir.position.set(5,10,7);
+            dir.position.set(5, 10, 7);
             scene.add(dir);
 
-            // Create four friendly textures using canvas
-            function makeStarsTexture(){
-                const c = document.createElement('canvas'); c.width=512; c.height=512; const ctx=c.getContext('2d');
-                ctx.fillStyle='#9be7ff'; ctx.fillRect(0,0,c.width,c.height);
-                for(let i=0;i<40;i++){const x=Math.random()*c.width,y=Math.random()*c.height,r=6+Math.random()*10;ctx.fillStyle=['#fff','#fff6c8','#ffd7d7'][Math.floor(Math.random()*3)];ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
-                ctx.fillStyle='#fffb'; ctx.font='36px sans-serif'; ctx.fillText('Stars!',30,60);
+            // --- Texture generation functions ---
+            // Each function creates a 512x512 canvas, draws a kid-friendly pattern on it,
+            // and returns a Three.js CanvasTexture. Using canvas allows embedding the textures
+            // in a single HTML file without external image files.
+
+            // Stars: light blue background with colorful round 'star' blobs
+            function makeStarsTexture() {
+                const c = document.createElement('canvas');
+                c.width = 512; c.height = 512;
+                const ctx = c.getContext('2d');
+
+                // Background
+                ctx.fillStyle = '#9be7ff';
+                ctx.fillRect(0, 0, c.width, c.height);
+
+                // Draw many round dots to look like playful stars or confetti
+                for (let i = 0; i < 40; i++) {
+                    const x = Math.random() * c.width;
+                    const y = Math.random() * c.height;
+                    const r = 6 + Math.random() * 10;
+                    ctx.fillStyle = ['#ffffff', '#fff6c8', '#ffd7d7'][Math.floor(Math.random() * 3)];
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Friendly label (helps a 5-year-old relate to the texture)
+                ctx.fillStyle = '#222';
+                ctx.font = '36px sans-serif';
+                ctx.fillText('Stars!', 30, 60);
+
+                // Convert canvas to Three.js texture
                 return new THREE.CanvasTexture(c);
             }
 
-            function makeBalloonsTexture(){
-                const c = document.createElement('canvas'); c.width=512; c.height=512; const ctx=c.getContext('2d');
-                ctx.fillStyle='#ffdfe9'; ctx.fillRect(0,0,c.width,c.height);
-                const colors=['#ff6b6b','#ffd93d','#6bd4ff','#7dffa3','#b19cff'];
-                for(let i=0;i<8;i++){const x=60+Math.random()*380,y=80+Math.random()*320;ctx.fillStyle=colors[i%colors.length];ctx.beginPath();ctx.ellipse(x,y,30,40,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(0,0,0,0.08)';ctx.stroke();ctx.beginPath();ctx.moveTo(x,y+40);ctx.lineTo(x,y+80);ctx.strokeStyle='rgba(0,0,0,0.12)';ctx.stroke();}
-                ctx.fillStyle='#444'; ctx.font='36px sans-serif'; ctx.fillText('Balloons!',30,60);
+            // Balloons: soft pink background with colorful oval balloons and strings
+            function makeBalloonsTexture() {
+                const c = document.createElement('canvas');
+                c.width = 512; c.height = 512;
+                const ctx = c.getContext('2d');
+
+                ctx.fillStyle = '#ffdfe9';
+                ctx.fillRect(0, 0, c.width, c.height);
+
+                const colors = ['#ff6b6b', '#ffd93d', '#6bd4ff', '#7dffa3', '#b19cff'];
+                for (let i = 0; i < 8; i++) {
+                    const x = 60 + Math.random() * 380;
+                    const y = 80 + Math.random() * 320;
+                    ctx.fillStyle = colors[i % colors.length];
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, 30, 40, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Add a faint outline and a simple string
+                    ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + 40);
+                    ctx.lineTo(x, y + 80);
+                    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = '#222';
+                ctx.font = '36px sans-serif';
+                ctx.fillText('Balloons!', 30, 60);
+
                 return new THREE.CanvasTexture(c);
             }
 
-            function makeCloudsTexture(){
-                const c = document.createElement('canvas'); c.width=512; c.height=512; const ctx=c.getContext('2d');
-                ctx.fillStyle='#a6e3ff'; ctx.fillRect(0,0,c.width,c.height);
-                function cloud(x,y,s){ctx.fillStyle='rgba(255,255,255,0.95)';ctx.beginPath();ctx.ellipse(x,y,40*s,30*s,0,0,Math.PI*2);ctx.ellipse(x+30*s,y-10*s,30*s,22*s,0,0,Math.PI*2);ctx.fill();}
-                for(let i=0;i<6;i++){cloud(50+Math.random()*420,60+Math.random()*300,0.7+Math.random()*0.8);} 
-                ctx.fillStyle='#2b2b2b'; ctx.font='34px sans-serif'; ctx.fillText('Clouds',30,60);
+            // Clouds: blue sky with soft white cloud shapes
+            function makeCloudsTexture() {
+                const c = document.createElement('canvas');
+                c.width = 512; c.height = 512;
+                const ctx = c.getContext('2d');
+
+                ctx.fillStyle = '#a6e3ff';
+                ctx.fillRect(0, 0, c.width, c.height);
+
+                function cloud(x, y, s) {
+                    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, 40 * s, 30 * s, 0, 0, Math.PI * 2);
+                    ctx.ellipse(x + 30 * s, y - 10 * s, 30 * s, 22 * s, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                for (let i = 0; i < 6; i++) {
+                    cloud(50 + Math.random() * 420, 60 + Math.random() * 300, 0.7 + Math.random() * 0.8);
+                }
+
+                ctx.fillStyle = '#222';
+                ctx.font = '34px sans-serif';
+                ctx.fillText('Clouds', 30, 60);
+
                 return new THREE.CanvasTexture(c);
             }
 
-            function makeAnimalsTexture(){
-                const c = document.createElement('canvas'); c.width=512; c.height=512; const ctx=c.getContext('2d');
-                ctx.fillStyle='#fff2d6'; ctx.fillRect(0,0,c.width,c.height);
-                // simple smiling faces
-                for(let i=0;i<9;i++){const x=40+ (i%3)*150 + (Math.random()-0.5)*20, y=100+ Math.floor(i/3)*140 + (Math.random()-0.5)*20; ctx.fillStyle=['#ffd9c0','#ffd6ff','#c8ffd6'][i%3]; ctx.beginPath(); ctx.arc(x,y,40,0,Math.PI*2); ctx.fill(); ctx.fillStyle='#222'; ctx.beginPath(); ctx.arc(x-12,y-6,6,0,Math.PI*2); ctx.arc(x+12,y-6,6,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x,y+8,16,0,Math.PI); ctx.stroke();}
-                ctx.fillStyle='#333'; ctx.font='34px sans-serif'; ctx.fillText('Friends',30,60);
+            // Animals / Friends: warm background with simple smiling faces to suggest friendly characters
+            function makeAnimalsTexture() {
+                const c = document.createElement('canvas');
+                c.width = 512; c.height = 512;
+                const ctx = c.getContext('2d');
+
+                ctx.fillStyle = '#fff2d6';
+                ctx.fillRect(0, 0, c.width, c.height);
+
+                // Draw a 3x3 grid of simple smiling faces
+                for (let i = 0; i < 9; i++) {
+                    const x = 40 + (i % 3) * 150 + (Math.random() - 0.5) * 20;
+                    const y = 100 + Math.floor(i / 3) * 140 + (Math.random() - 0.5) * 20;
+                    ctx.fillStyle = ['#ffd9c0', '#ffd6ff', '#c8ffd6'][i % 3];
+                    ctx.beginPath();
+                    ctx.arc(x, y, 40, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Eyes
+                    ctx.fillStyle = '#222';
+                    ctx.beginPath();
+                    ctx.arc(x - 12, y - 6, 6, 0, Math.PI * 2);
+                    ctx.arc(x + 12, y - 6, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Smile
+                    ctx.beginPath();
+                    ctx.arc(x, y + 8, 16, 0, Math.PI);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = '#333';
+                ctx.font = '34px sans-serif';
+                ctx.fillText('Friends', 30, 60);
+
                 return new THREE.CanvasTexture(c);
             }
 
+            // --- Materials: map textures onto 4 faces of a box (two faces left white) ---
             const mats = [
-                new THREE.MeshStandardMaterial({map: makeStarsTexture()}),
-                new THREE.MeshStandardMaterial({map: makeBalloonsTexture()}),
-                new THREE.MeshStandardMaterial({map: makeCloudsTexture()}),
-                new THREE.MeshStandardMaterial({map: makeAnimalsTexture()}),
-                new THREE.MeshStandardMaterial({color:'#ffffff'}),
-                new THREE.MeshStandardMaterial({color:'#ffffff'})
+                new THREE.MeshStandardMaterial({ map: makeStarsTexture() }),
+                new THREE.MeshStandardMaterial({ map: makeBalloonsTexture() }),
+                new THREE.MeshStandardMaterial({ map: makeCloudsTexture() }),
+                new THREE.MeshStandardMaterial({ map: makeAnimalsTexture() }),
+                new THREE.MeshStandardMaterial({ color: '#ffffff' }),
+                new THREE.MeshStandardMaterial({ color: '#ffffff' })
             ];
 
-            const geo = new THREE.BoxGeometry(1.6,1.6,1.6);
+            // Geometry: cube sized so textures are easy to see at typical window sizes
+            const geo = new THREE.BoxGeometry(1.6, 1.6, 1.6);
             const cube = new THREE.Mesh(geo, mats);
             scene.add(cube);
 
-            // Position cube slightly above ground
+            // Slight vertical offset so the cube sits above the subtle ground plane
             cube.position.y = 0.1;
 
-            // Ground subtle shadow plane
-            const ground = new THREE.Mesh(new THREE.PlaneGeometry(10,10), new THREE.MeshStandardMaterial({color:'#f0f0f0'}));
-            ground.rotation.x = -Math.PI/2; ground.position.y = -0.9; scene.add(ground);
+            // Ground plane: subtle color to suggest a floor and provide visual grounding
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(10, 10),
+                new THREE.MeshStandardMaterial({ color: '#f0f0f0' })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.9;
+            scene.add(ground);
 
-            // Stepwise rotation: rotate 90 degrees each step so one full face faces the camera
-            let anim = {start: performance.now(), duration: 900, running:false};
-            let currentStep = 0;
+            // --- Rotation logic (stepwise, so one face is shown at a time) ---
+            // `anim` holds the current animation state; we interpolate rotation from `from` to `to`.
+            let anim = { start: performance.now(), duration: 900, running: false };
+            let currentStep = 0; // Not used for rendering but helpful for state tracking
             let from = 0, to = 0;
-            function startStep(){
+
+            // Start a single rotation step: rotate -90 degrees around Y so the cube turns clockwise
+            function startStep() {
                 from = cube.rotation.y;
-                to = from - Math.PI/2;
-                anim.start = performance.now(); anim.duration = 800; anim.running = true;
+                to = from - Math.PI / 2; // negative to rotate clockwise as seen from above
+                anim.start = performance.now();
+                anim.duration = 800; // ms for the rotation animation
+                anim.running = true;
             }
 
-            function updateStep(now){
-                if(!anim.running) return;
-                const t = Math.min(1, (now - anim.start)/anim.duration);
-                // ease in-out
-                const tt = t<0.5?2*t*t: -1 + (4-2*t)*t;
-                cube.rotation.y = from + (to-from)*tt;
-                if(t>=1){ anim.running=false; currentStep=(currentStep+1)%4; // pause then next
-                    setTimeout(()=>startStep(), 1000);
+            // Update the step animation; `now` is the high-resolution timestamp passed by requestAnimationFrame
+            function updateStep(now) {
+                if (!anim.running) return;
+                const t = Math.min(1, (now - anim.start) / anim.duration);
+                // Ease in-out curve for a smooth, child-friendly motion
+                const tt = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                cube.rotation.y = from + (to - from) * tt;
+
+                // When the interpolation completes, pause briefly and queue next step
+                if (t >= 1) {
+                    anim.running = false;
+                    currentStep = (currentStep + 1) % 4;
+                    setTimeout(() => startStep(), 1000); // 1s pause so each face stays visible
                 }
             }
 
-            // kick off first rotation after short pause
-            setTimeout(()=>startStep(), 700);
+            // Start the first rotation after a short pause so initial view is readable
+            setTimeout(() => startStep(), 700);
 
-            function animate(now){
+            // Main render loop. We pass the `now` timestamp to updateStep so animation timing is correct.
+            function animate(now) {
                 requestAnimationFrame(animate);
                 updateStep(now);
                 renderer.render(scene, camera);
@@ -127,11 +252,37 @@
 
             animate(performance.now());
 
-            // Responsiveness
-            window.addEventListener('resize', ()=>{
-                camera.aspect = window.innerWidth/window.innerHeight;
+            // --- Responsiveness: update camera and renderer on resize ---
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // --- Simple controls: click or arrow key toggles rotation (pause/resume) ---
+            // For this assignment, clicking anywhere pauses/resumes the stepwise auto-rotation.
+            let paused = false;
+            window.addEventListener('click', () => {
+                paused = !paused;
+                if (paused) {
+                    // stop any running animation
+                    anim.running = false;
+                } else {
+                    // resume by starting a fresh step
+                    startStep();
+                }
+            });
+
+            // Arrow keys also toggle pause/resume for accessibility (left/right/space)
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ') {
+                    paused = !paused;
+                    if (paused) {
+                        anim.running = false;
+                    } else {
+                        startStep();
+                    }
+                }
             });
 
         </script>
